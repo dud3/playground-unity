@@ -39,17 +39,17 @@ public class CharacterController_ : MonoBehaviour
 
         Vector3 move = new Vector3(h, 0, v);
 
-        if (move.magnitude > 0.1f && !isPunching)
+        if (move.magnitude > 0.1f)
         {
             controller.Move(move * moveSpeed * Time.deltaTime);
             transform.forward = move; // face direction of movement
         }
 
         // Animator
-        animator.SetFloat("Speed", isPunching ? 0 : move.magnitude);
+        animator.SetFloat("Speed", move.magnitude);
 
         // Jump
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded && !isPunching)
+        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
         {
             velocity.y = jumpForce;
             animator.SetBool("IsJumping", true);
@@ -69,12 +69,24 @@ public class CharacterController_ : MonoBehaviour
 
         // Debug.Log(velocity);
 
-        if (Input.GetKeyDown(KeyCode.F) && isGrounded && !isPunching)
+        if (Input.GetKeyDown(KeyCode.F) && !isPunching)
         {
             StartCoroutine(Punch());
         }
 
         DetectSurface();
+    }
+
+    System.Collections.IEnumerator Punch()
+    {
+        isPunching = true;
+        animator.SetBool("IsPunching", true);
+
+        float clipLength = punchClip != null ? punchClip.length : 1f;
+        Debug.Log(punchClip.name);
+        Debug.Log("Punch clip length: " + clipLength);
+
+        yield return null;
     }
 
     // Called automatically by the Animation Event at impact frame
@@ -101,18 +113,6 @@ public class CharacterController_ : MonoBehaviour
     {
         animator.SetBool("IsPunching", false);
         isPunching = false;
-    }
-
-    System.Collections.IEnumerator Punch()
-    {
-        isPunching = true;
-        animator.SetBool("IsPunching", true);
-
-        float clipLength = punchClip != null ? punchClip.length : 1f;
-        Debug.Log(punchClip.name);
-        Debug.Log("Punch clip length: " + clipLength);
-
-        yield return null;
     }
 
     // Get's called by the engine
