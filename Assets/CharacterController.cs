@@ -46,7 +46,11 @@ public class CharacterController_ : MonoBehaviour
         }
 
         // Animator
-        animator.SetFloat("Speed", move.magnitude);
+        Vector3 localMove = transform.InverseTransformDirection(move.normalized);
+        animator.SetFloat("VelocityX", localMove.x, 0.1f, Time.deltaTime);
+        animator.SetFloat("VelocityZ", localMove.z, 0.1f, Time.deltaTime);
+
+        Debug.Log(localMove);
 
         // Jump
         if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
