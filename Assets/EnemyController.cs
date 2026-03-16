@@ -1,4 +1,5 @@
 using Unity.VisualScripting.FullSerializer;
+using UnityEditor.Rendering.Universal.ShaderGUI;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -8,6 +9,9 @@ public class EnemyController : MonoBehaviour
     public float detectionRange = 8f;
     public float attackRange = 1.5f;
 
+    private Vector3 originalPosition;
+    private Vector3 patrolPosition;
+    private bool patrolFlag = true;
     private NavMeshAgent agent;
     private Animator animator;
     private bool isHit = false;
@@ -18,6 +22,12 @@ public class EnemyController : MonoBehaviour
     {
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
+
+        originalPosition = transform.position;
+        patrolPosition = originalPosition + transform.forward * 5.0f;
+
+        Debug.Log(originalPosition);
+        Debug.Log(patrolPosition);
     }
 
     // Update is called once per frame
@@ -25,23 +35,35 @@ public class EnemyController : MonoBehaviour
     {
         if (player == null) return;
 
+        // Debug.Log(agent.remainingDistance);
+
         float distanceToPlayer = 
             Vector3.Distance(transform.position, player.position);
 
         if (distanceToPlayer < detectionRange && distanceToPlayer > attackRange)
         {
             // Chase the player
-            agent.isStopped = false;
-            agent.SetDestination(player.position);
+            if (Vector3.Angle(transform.forward, player.position - transform.position) <= 60f)
+            {
+                agent.isStopped = false;
+                agent.SetDestination(player.position);
+            }
         }
         else if (distanceToPlayer <= attackRange)
         {
             // Close enough — stop and face player
-            agent.isStopped = true;
             FacePlayer();
         }
         else
         {
+           // agent.isStopped = false;
+            
+            if (agent.remainingDistance <= 1)
+            {
+                // agent.SetDestination(patrolFlag ? patrolPosition : originalPosition);
+                // patrolFlag = !patrolFlag;
+            }
+
             agent.isStopped = true;
         }
 
@@ -52,8 +74,8 @@ public class EnemyController : MonoBehaviour
     void FacePlayer()
     {
         Vector3 direction = (player.position - transform.position).normalized;
-        direction.y = 0;
 
+        direction.y = 0;
         transform.rotation = Quaternion.Slerp(
             transform.rotation,
             Quaternion.LookRotation(direction),

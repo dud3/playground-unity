@@ -1,20 +1,24 @@
-using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
 using NUnit.Framework;
 using UnityEngine;
 
 public class CharacterController_ : MonoBehaviour
 {
-    public float moveSpeed = 3f;
-    public float jumpForce = 5f;
-
+   
+    public float walkSpeed = 3f;
+    public float runSpeed = 6f;
+    public float jumpForce = 8f;
     public float gravity = -20f;
     public float punchRange = 1.5f;
+
     public AnimationClip punchClip;
+    public Transform cameraTransform;
 
     private Animator animator;
     private CharacterController controller;
     private Vector3 velocity;
+    private float jumpingProgress = 0f;
+    private float jumpingProgressDelta = 0f;
 
     private string currentSurface = "";
 
@@ -25,7 +29,15 @@ public class CharacterController_ : MonoBehaviour
     {
         animator = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        if (cameraTransform == null)
+            cameraTransform = Camera.main.transform;
     }
+
+    int jumpingUpHash = Animator.StringToHash("Jumping Up");
 
     // Update is called once per frame
     void Update()
@@ -34,38 +46,83 @@ public class CharacterController_ : MonoBehaviour
         if (isGrounded && velocity.y < 0)
             velocity.y = -2f; // small negative to keep grounded
 
+        bool isRunning = Input.GetKey(KeyCode.LeftShift);
+        float currentSpeed = isRunning ? runSpeed : walkSpeed;
+
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
 
-        Vector3 move = new Vector3(h, 0, v);
+        Vector3 camForward = cameraTransform.forward;
+        Vector3 camRight = cameraTransform.right;
+        camForward.y = 0f; // flatten so camera pitch doesn't push us up/down
+        camRight.y = 0f;
+        camForward.Normalize();
+        camRight.Normalize();
+
+        Vector3 move = (camForward * v + camRight * h);
+
+        // Debug.Log(move.magnitude);
 
         if (move.magnitude > 0.1f)
         {
-            controller.Move(move * moveSpeed * Time.deltaTime);
-            transform.forward = move; // face direction of movement
+            // Vector3 dir = cameraTransform.forward * v + cameraTransform.right * h;
+            controller.Move(move * currentSpeed * Time.deltaTime);
+            // transform.forward = move; // face direction of movement
+
+            Quaternion targetRotation = Quaternion.LookRotation(camForward);
+
+            if ((camForward * v).magnitude > 0.1f && (camForward * h).magnitude > 0.1f) {
+
+                Vector3 rotate = move;
+
+                if (v < 0.0f) {
+                    rotate = -move;
+                }
+
+                targetRotation = Quaternion.LookRotation(rotate);
+            }
+
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                Time.deltaTime * 10f
+            );
         }
 
         // Animator
         Vector3 localMove = transform.InverseTransformDirection(move.normalized);
-        animator.SetFloat("VelocityX", localMove.x, 0.1f, Time.deltaTime);
-        animator.SetFloat("VelocityZ", localMove.z, 0.1f, Time.deltaTime);
 
-        Debug.Log(localMove);
+        float velocityX = localMove.x * 0.5f;
+        float velocityZ = localMove.z * (isRunning ? 1f : 0.5f);
+
+        animator.SetFloat("VelocityX", velocityX, 0.1f, Time.deltaTime);
+        animator.SetFloat("VelocityZ", velocityZ, 0.1f, Time.deltaTime);
 
         // Jump
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
+
+        jumpingProgress += jumpingProgressDelta * Time.deltaTime;
+
+        // Debug.Log(jumpingProgress);
+
+        AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
+
+        if (stateInfo.IsName("Jumping Up"))
         {
-            velocity.y = jumpForce;
+            float normalized = Mathf.Clamp01(stateInfo.normalizedTime);
+            float elapsed    = normalized * stateInfo.length;
+
+            // Debug.Log($"Jumping Up: {elapsed:F2}s / {stateInfo.length:F2}s ({normalized * 100f:F1}%)");
+        }
+
+        if (isGrounded && Input.GetKeyDown(KeyCode.Space))
+        {
+            jumpingProgressDelta = 1f;
             animator.SetBool("IsJumping", true);
         }
 
-        if (!isGrounded)
-        {
-            animator.SetBool("IsJumping", false);
+        if (isGrounded) {
+            animator.SetBool("IsLanding", false);
         }
-
-        if (isGrounded && !Input.GetKeyDown(KeyCode.Space))
-            animator.SetBool("IsJumping", false);
 
         // Apply gravity manually
         velocity.y += gravity * Time.deltaTime;        
@@ -81,12 +138,29 @@ public class CharacterController_ : MonoBehaviour
         DetectSurface();
     }
 
+    public void OnJumpPeak()
+    {
+        velocity.y = jumpForce;
+    }
+
+    public void OnJumpEnd()
+    {
+        animator.SetBool("IsJumping", false);
+        animator.SetBool("IsLanding", true);
+    }
+
+    public void OnLandEnd()
+    {
+        animator.SetBool("IsLanding", false);
+    }
+
     System.Collections.IEnumerator Punch()
     {
         isPunching = true;
         animator.SetBool("IsPunching", true);
 
         float clipLength = punchClip != null ? punchClip.length : 1f;
+
         Debug.Log(punchClip.name);
         Debug.Log("Punch clip length: " + clipLength);
 
