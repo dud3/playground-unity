@@ -15,9 +15,9 @@ public class EnemyController : MonoBehaviour
     private NavMeshAgent agent;
     private Animator animator;
     private bool isHit = false;
-    
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    
+
     void Start()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -37,7 +37,7 @@ public class EnemyController : MonoBehaviour
 
         // Debug.Log(agent.remainingDistance);
 
-        float distanceToPlayer = 
+        float distanceToPlayer =
             Vector3.Distance(transform.position, player.position);
 
         if (distanceToPlayer < detectionRange && distanceToPlayer > attackRange)
@@ -57,7 +57,7 @@ public class EnemyController : MonoBehaviour
         else
         {
            // agent.isStopped = false;
-            
+
             if (agent.remainingDistance <= 1)
             {
                 // agent.SetDestination(patrolFlag ? patrolPosition : originalPosition);

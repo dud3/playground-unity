@@ -4,12 +4,14 @@ using UnityEngine;
 
 public class CharacterController_ : MonoBehaviour
 {
-   
     public float walkSpeed = 3f;
     public float runSpeed = 6f;
     public float jumpForce = 8f;
     public float gravity = -20f;
     public float punchRange = 1.5f;
+
+    public Transform aimTarget;
+    public Transform lookTarget;
 
     public AnimationClip punchClip;
     public Transform cameraTransform;
@@ -125,7 +127,7 @@ public class CharacterController_ : MonoBehaviour
         }
 
         // Apply gravity manually
-        velocity.y += gravity * Time.deltaTime;        
+        velocity.y += gravity * Time.deltaTime;
         controller.Move(velocity * Time.deltaTime);
 
         // Debug.Log(velocity);
@@ -211,6 +213,37 @@ public class CharacterController_ : MonoBehaviour
         {
             currentSurface = hit.collider.gameObject.name;
             // Debug.Log("Current surface: " + currentSurface);
+        }
+    }
+
+    // IK
+
+    void OnAnimatorIK(int layerIndex)
+    {
+        if (aimTarget != null)
+        {
+            Debug.Log("OnAnimatorIK");
+            
+            // Right hand fully follows the target
+            animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 1f);
+            animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 1f);
+
+            animator.SetIKPosition(AvatarIKGoal.RightHand, aimTarget.position);
+            animator.SetIKRotation(AvatarIKGoal.RightHand, aimTarget.rotation);
+        }
+
+        if (lookTarget != null) {
+            animator.SetLookAtWeight(
+                weight:     1f,   // Overall influence
+                bodyWeight: 0.1f, // How much the body turns
+                headWeight: 0.8f, // How much the head turns
+                eyesWeight: 0.5f, // How much the eyes move
+                clampWeight: 0.6f // Limits how far the head can turn (0=no limit, 1=full clamp)
+            );
+
+            animator.SetLookAtPosition(lookTarget.position);
+        } else {
+            animator.SetLookAtWeight(0f);
         }
     }
 }
