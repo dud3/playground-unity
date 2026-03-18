@@ -26,11 +26,16 @@ public class CharacterController_ : MonoBehaviour
 
     private bool isPunching = false;
 
+    private bool inverseKinematicsHandInterpolate = false;
+    private float inverseKinematicsHandInterpolateDelta = 0.0f;
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
         animator = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
+
+        animator.SetLayerWeight(1, 0f);
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
@@ -38,8 +43,6 @@ public class CharacterController_ : MonoBehaviour
         if (cameraTransform == null)
             cameraTransform = Camera.main.transform;
     }
-
-    int jumpingUpHash = Animator.StringToHash("Jumping Up");
 
     // Update is called once per frame
     void Update()
@@ -220,13 +223,24 @@ public class CharacterController_ : MonoBehaviour
 
     void OnAnimatorIK(int layerIndex)
     {
+        /*
         if (aimTarget != null)
         {
-            Debug.Log("OnAnimatorIK");
-            
+            if (Input.GetKeyDown(KeyCode.LeftControl)) {
+                inverseKinematicsHandInterpolate = !inverseKinematicsHandInterpolate;
+            }
+
+            if (inverseKinematicsHandInterpolate) {
+                inverseKinematicsHandInterpolateDelta = Mathf.Lerp(inverseKinematicsHandInterpolateDelta, 1.0f, Time.deltaTime / 4);
+            } else {
+                inverseKinematicsHandInterpolateDelta = Mathf.Lerp(inverseKinematicsHandInterpolateDelta, 0.0f, Time.deltaTime / 4);
+            }
+
+            Debug.Log(inverseKinematicsHandInterpolateDelta);
+
             // Right hand fully follows the target
-            animator.SetIKPositionWeight(AvatarIKGoal.RightHand, 1f);
-            animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 1f);
+            animator.SetIKPositionWeight(AvatarIKGoal.RightHand, inverseKinematicsHandInterpolateDelta);
+            animator.SetIKRotationWeight(AvatarIKGoal.RightHand, 0.2f);
 
             animator.SetIKPosition(AvatarIKGoal.RightHand, aimTarget.position);
             animator.SetIKRotation(AvatarIKGoal.RightHand, aimTarget.rotation);
@@ -245,5 +259,6 @@ public class CharacterController_ : MonoBehaviour
         } else {
             animator.SetLookAtWeight(0f);
         }
+        */
     }
 }
