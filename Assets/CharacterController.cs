@@ -35,7 +35,7 @@ public class CharacterController_ : MonoBehaviour
         animator = GetComponent<Animator>();
         controller = GetComponent<CharacterController>();
 
-        animator.SetLayerWeight(1, 0f);
+        // animator.SetLayerWeight(1, 0f);
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
